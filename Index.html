@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>สมุดรายจ่าย</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper: #EAE6DA;
+    --card: #FBF9F4;
+    --ink: #23281F;
+    --ink-soft: #5B5A4E;
+    --rule: #D3CCB8;
+    --expense: #A83A2C;
+    --income: #3D6B52;
+    --cover: #23281F;
+    --cover-text: #EAE6DA;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color: transparent;}
+  html,body{margin:0;padding:0;height:100%;}
+  body{ font-family:'Inter',sans-serif; background:var(--paper); color:var(--ink); min-height:100vh; display:flex; justify-content:center; }
+  #app{ width:100%; max-width:480px; min-height:100vh; background:var(--paper); position:relative; display:flex; flex-direction:column; }
+  .num{ font-variant-numeric: tabular-nums; }
+
+  /* ---------- LOGIN ---------- */
+  #loginScreen{ flex:1; display:flex; flex-direction:column; justify-content:center; padding:32px 28px; background: var(--cover); color:var(--cover-text); min-height:100vh; }
+  .cover-mark{ width:38px;height:38px; border:1.5px solid rgba(234,230,218,0.55); border-radius:50%; display:flex;align-items:center;justify-content:center; font-family:'Fraunces',serif; font-size:18px; margin-bottom:24px; }
+  .mode-toggle{ display:flex; gap:22px; margin-bottom:30px; }
+  .mode-toggle button{ background:none; border:none; padding-bottom:8px; font-size:13px; color:rgba(234,230,218,0.45); border-bottom:2px solid transparent; cursor:pointer; font-family:'Inter',sans-serif; }
+  .mode-toggle button.active{ color:var(--cover-text); border-bottom-color:var(--cover-text); font-weight:600; }
+  .cover-title{ font-family:'Fraunces',serif; font-weight:600; font-size:36px; line-height:1.15; margin:0 0 10px 0; letter-spacing:-0.01em; }
+  .cover-sub{ font-size:14px; color:rgba(234,230,218,0.62); margin:0 0 36px 0; line-height:1.6; max-width:32ch; }
+  .field-label{ font-size:12.5px; color:rgba(234,230,218,0.55); margin-bottom:8px; display:block; }
+  .phone-row{ display:flex; align-items:baseline; border-bottom:1.5px solid rgba(234,230,218,0.35); padding-bottom:12px; margin-bottom:8px; }
+  .phone-row:focus-within{ border-color: rgba(234,230,218,0.9); }
+  .phone-row span{ font-family:'Fraunces',serif; font-size:22px; margin-right:8px; color:rgba(234,230,218,0.5); }
+  #phoneInput{ flex:1; background:transparent; border:none; outline:none; color:var(--cover-text); font-family:'Fraunces',serif; font-size:24px; letter-spacing:0.03em; }
+  #phoneInput::placeholder{ color:rgba(234,230,218,0.28); }
+  #loginError{ font-size:12.5px; color:#E3A499; min-height:18px; margin-top:8px; }
+  #openBtn{ margin-top:32px; width:100%; padding:15px 0; border-radius:2px; border:none; background:var(--paper); color:var(--cover); font-weight:600; font-size:15px; cursor:pointer; }
+  #openBtn:active{ opacity:0.85; }
+  .cover-foot{ margin-top:20px; font-size:11.5px; color:rgba(234,230,218,0.4); line-height:1.6; }
+
+  /* ---------- MAIN ---------- */
+  #mainScreen{ display:none; flex-direction:column; flex:1; }
+  header.topbar{ display:flex; align-items:center; justify-content:space-between; padding:20px 22px 14px 22px; gap:10px; }
+  .topbar-title{ font-family:'Fraunces',serif; font-size:18px; font-weight:600; }
+  .topbar-phone{ font-size:12px; color:var(--ink-soft); margin-top:2px; }
+  .topbar-actions{ display:flex; gap:8px; flex-shrink:0; }
+  .pill-btn{ background:none; border:1px solid var(--rule); color:var(--ink-soft); font-size:12px; padding:7px 12px; border-radius:20px; cursor:pointer; font-family:'Inter',sans-serif; white-space:nowrap; }
+
+  .balance-card{ margin:4px 22px 18px 22px; background:var(--card); border-radius:4px; padding:22px 22px 20px 22px; border:1px solid var(--rule); }
+  .balance-label{ font-size:12.5px; color:var(--ink-soft); margin-bottom:6px; }
+  .balance-figure{ font-family:'Fraunces',serif; font-size:36px; font-weight:600; line-height:1.1; }
+  .balance-split{ display:flex; margin-top:18px; border-top:1px solid var(--rule); padding-top:14px; }
+  .split-item{ flex:1; }
+  .split-item + .split-item{ border-left:1px solid var(--rule); padding-left:16px; margin-left:16px; }
+  .split-label{ font-size:11.5px; color:var(--ink-soft); margin-bottom:4px; }
+  .split-value{ font-family:'Fraunces',serif; font-size:18px; font-weight:600; }
+  .split-value.expense{ color:var(--expense); }
+  .split-value.income{ color:var(--income); }
+
+  .ledger{ flex:1; padding:4px 22px 110px 22px; }
+  .ledger-month{ font-size:12px; color:var(--ink-soft); margin:22px 0 6px 2px; }
+  .ledger-month:first-child{ margin-top:6px; }
+
+  .row{ display:flex; align-items:center; padding:13px 2px; border-bottom:1px solid var(--rule); gap:12px; }
+  .row-icon{ width:34px;height:34px; border-radius:50%; background:var(--card); border:1px solid var(--rule); display:flex;align-items:center;justify-content:center; font-size:15px; flex-shrink:0; overflow:hidden; padding:0; cursor:default; }
+  .row-icon.photo{ cursor:pointer; }
+  .row-icon.photo img{ width:100%; height:100%; object-fit:cover; }
+  .row-mid{ flex:1; min-width:0; }
+  .row-cat{ font-size:14.5px; font-weight:500; }
+  .row-note{ font-size:12px; color:var(--ink-soft); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .row-pay{ font-size:11px; color:var(--ink-soft); margin-top:2px; }
+  .row-right{ text-align:right; flex-shrink:0; }
+  .row-amt{ font-family:'Fraunces',serif; font-size:16px; font-weight:600; }
+  .row-amt.expense{ color:var(--expense); }
+  .row-amt.income{ color:var(--income); }
+  .row-date{ font-size:11px; color:var(--ink-soft); margin-top:2px; }
+  .row-del{ background:none; border:none; color:var(--ink-soft); font-size:18px; padding:4px 2px 4px 8px; cursor:pointer; line-height:1; flex-shrink:0; }
+
+  .empty-state{ text-align:center; padding:60px 20px; color:var(--ink-soft); }
+  .empty-state .mark{ font-family:'Fraunces',serif; font-size:26px; color:var(--ink); margin-bottom:8px; }
+  .empty-state p{ font-size:13.5px; line-height:1.6; }
+
+  #fab{ position:fixed; bottom:26px; right:22px; width:56px;height:56px; border-radius:50%; background:var(--cover); color:var(--paper); border:none; font-size:26px; display:flex;align-items:center;justify-content:center; cursor:pointer; box-shadow:0 6px 18px rgba(35,40,31,0.28); z-index:15; }
+  #fabAnchor{ position:relative; max-width:480px; margin:0 auto; }
+
+  /* ---------- OVERLAY / SHEET ---------- */
+  .overlay{ display:none; position:fixed; inset:0; background:rgba(35,40,31,0.4); z-index:20; justify-content:center; align-items:flex-end; }
+  .overlay.show{ display:flex; }
+  .sheet{ width:100%; max-width:480px; background:var(--paper); border-radius:14px 14px 0 0; padding:22px 22px 26px 22px; max-height:88vh; overflow-y:auto; }
+  .sheet-title{ font-family:'Fraunces',serif; font-size:20px; font-weight:600; margin-bottom:18px; }
+
+  .seg-toggle{ display:flex; border:1px solid var(--rule); border-radius:8px; overflow:hidden; margin-bottom:18px; }
+  .seg-toggle button{ flex:1; padding:11px 0; background:var(--card); border:none; font-size:13.5px; font-weight:600; color:var(--ink-soft); cursor:pointer; font-family:'Inter',sans-serif; }
+  .seg-toggle button.active.expense{ background:var(--expense); color:#fff; }
+  .seg-toggle button.active.income{ background:var(--income); color:#fff; }
+  .seg-toggle button.active.neutral{ background:var(--ink); color:var(--paper); }
+
+  .form-group{ margin-bottom:16px; }
+  .form-group label{ font-size:12px; color:var(--ink-soft); display:block; margin-bottom:6px; }
+  .amt-input-wrap{ display:flex; align-items:baseline; border-bottom:2px solid var(--rule); padding-bottom:8px; }
+  .amt-input-wrap span{ font-family:'Fraunces',serif; font-size:20px; color:var(--ink-soft); margin-right:6px; }
+  #amountInput{ flex:1; border:none; outline:none; background:transparent; font-family:'Fraunces',serif; font-size:28px; font-weight:600; }
+  .cat-grid{ display:flex; flex-wrap:wrap; gap:8px; }
+  .cat-chip{ padding:8px 13px; border-radius:20px; border:1px solid var(--rule); background:var(--card); font-size:13px; cursor:pointer; color:var(--ink); }
+  .cat-chip.active{ background:var(--ink); color:var(--paper); border-color:var(--ink); }
+  #noteInput, #dateInput{ width:100%; padding:11px 12px; border-radius:8px; border:1px solid var(--rule); background:var(--card); font-size:14px; color:var(--ink); outline:none; font-family:'Inter',sans-serif; }
+
+  .upload-btn{ display:inline-flex; user-select:none; align-items:center; gap:8px; padding:10px 14px; border-radius:8px; border:1px dashed var(--rule); background:var(--card); font-size:13px; color:var(--ink-soft); cursor:pointer; }
+  .img-preview{ position:relative; display:inline-block; margin-top:10px; }
+  .img-preview img{ width:84px;height:84px; object-fit:cover; border-radius:8px; border:1px solid var(--rule); display:block; }
+  .img-preview .remove-img{ position:absolute; top:-8px; right:-8px; width:22px;height:22px; border-radius:50%; background:var(--ink); color:var(--paper); border:none; font-size:13px; cursor:pointer; line-height:1; }
+  .hidden{ display:none !important; }
+
+  #saveBtn{ width:100%; padding:15px 0; margin-top:6px; border:none; border-radius:8px; background:var(--ink); color:var(--paper); font-weight:600; font-size:15px; cursor:pointer; }
+  #cancelBtn{ width:100%; padding:12px 0; margin-top:8px; border:none; background:none; color:var(--ink-soft); font-size:13.5px; cursor:pointer; }
+
+  /* ---------- SHARE ---------- */
+  .share-phone{ font-family:'Fraunces',serif; font-size:28px; font-weight:600; text-align:center; padding:18px 0; background:var(--card); border:1px solid var(--rule); border-radius:8px; margin:16px 0; }
+  .share-note{ font-size:13px; color:var(--ink-soft); line-height:1.6; }
+
+  /* ---------- LIGHTBOX ---------- */
+  #lightboxOverlay{ align-items:center; background:rgba(20,22,17,0.92); }
+  .lightbox-body{ width:100%; max-width:480px; padding:22px; max-height:90vh; overflow-y:auto; }
+  .lightbox-body figure{ margin:0 0 18px 0; }
+  .lightbox-body img{ width:100%; border-radius:8px; display:block; }
+  .lightbox-body figcaption{ color:var(--cover-text); font-size:12px; margin-top:8px; opacity:0.7; }
+  #lightboxClose{ display:block; margin:6px auto 0 auto; background:none; border:1px solid rgba(234,230,218,0.4); color:var(--cover-text); padding:10px 20px; border-radius:20px; font-size:13px; cursor:pointer; }
+
+  /* ---------- TOAST ---------- */
+  #toast{ position:fixed; bottom:26px; left:50%; transform:translateX(-50%) translateY(120%); background:var(--ink); color:var(--paper); padding:12px 16px; border-radius:8px; font-size:13px; display:flex; align-items:center; gap:14px; z-index:30; transition:transform .28s ease; max-width:88%; }
+  #toast.show{ transform:translateX(-50%) translateY(0); }
+  #toast button{ background:none; border:none; color:var(--paper); font-weight:600; text-decoration:underline; cursor:pointer; font-size:13px; flex-shrink:0; }
+
+  #loadingScreen{ position:fixed; inset:0; background:var(--paper); display:flex; align-items:center; justify-content:center; color:var(--ink-soft); font-size:13px; z-index:40; }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <div id="loadingScreen">กำลังเปิดสมุด…</div>
+
+  <!-- LOGIN -->
+  <div id="loginScreen" style="display:none;">
+    <div class="cover-mark">฿</div>
+    <div class="mode-toggle">
+      <button type="button" id="modeOwnerBtn" class="active">เจ้าของสมุด</button>
+      <button type="button" id="modeParentBtn">พ่อแม่ (ดูอย่างเดียว)</button>
+    </div>
+    <h1 class="cover-title" id="coverTitle">สมุดรายจ่าย</h1>
+    <p class="cover-sub" id="coverSub">บันทึกรายรับรายจ่ายของคุณ เข้าสู่ระบบด้วยเลขไอดีเพื่อเปิดสมุดของคุณ</p>
+
+    <span class="field-label" id="phoneFieldLabel">เลขไอดี</span>
+    <div class="phone-row">
+      <input id="phoneInput" type="text" inputmode="text" placeholder="เช่น nueng2547 หรือ 123456" maxlength="24" autocapitalize="off" autocomplete="off">
+    </div>
+    <div id="loginError"></div>
+
+    <button id="openBtn">เปิดสมุด</button>
+    <p class="cover-foot" id="coverFoot">ใช้เลขไอดีเป็นรหัสประจำสมุดของคุณ — ไอดีนี้จะเป็นไอดีที่พ่อแม่ใช้เข้าดูรายจ่ายได้ ข้อมูลรายการจะถูกเก็บแบบเปิดดูได้ตามไอดีนี้ ตั้งไอดีที่คนอื่นเดาไม่ได้ง่ายๆ</p>
+  </div>
+
+  <!-- MAIN -->
+  <div id="mainScreen">
+    <header class="topbar">
+      <div>
+        <div class="topbar-title" id="topbarTitle">สมุดรายจ่าย</div>
+        <div class="topbar-phone" id="phoneDisplay"></div>
+      </div>
+      <div class="topbar-actions">
+        <button class="pill-btn" id="shareBtn">แชร์</button>
+        <button class="pill-btn" id="logoutBtn">ออกจากระบบ</button>
+      </div>
+    </header>
+
+    <div class="balance-card">
+      <div class="balance-label" id="balanceLabel">ยอดคงเหลือทั้งหมด</div>
+      <div class="balance-figure num" id="balanceFigure">฿0</div>
+      <div class="balance-split">
+        <div class="split-item">
+          <div class="split-label">รายรับ</div>
+          <div class="split-value income num" id="totalIncome">฿0</div>
+        </div>
+        <div class="split-item">
+          <div class="split-label">รายจ่าย</div>
+          <div class="split-value expense num" id="totalExpense">฿0</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="ledger" id="ledger"></div>
+  </div>
+
+  <button id="fab">+</button>
+
+  <!-- ADD TRANSACTION SHEET -->
+  <div id="addOverlay" class="overlay">
+    <div class="sheet">
+      <div class="sheet-title">บันทึกรายการ</div>
+
+      <div class="seg-toggle">
+        <button type="button" id="typeExpenseBtn" class="active expense">รายจ่าย</button>
+        <button type="button" id="typeIncomeBtn" class="income">รายรับ</button>
+      </div>
+
+      <div class="form-group">
+        <label>จำนวนเงิน</label>
+        <div class="amt-input-wrap">
+          <span>฿</span>
+          <input id="amountInput" type="number" inputmode="decimal" placeholder="0" min="0" step="0.01">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>หมวดหมู่</label>
+        <div class="cat-grid" id="catGrid"></div>
+      </div>
+
+      <div class="form-group">
+        <label>จ่ายด้วยวิธีไหน</label>
+        <div class="seg-toggle">
+          <button type="button" id="payCashBtn" class="active neutral">เงินสด</button>
+          <button type="button" id="payScanBtn" class="neutral">สแกนจ่าย</button>
+        </div>
+      </div>
+
+      <div class="form-group hidden" id="slipField">
+        <label>แนบสลิปโอนเงิน</label>
+        <input type="file" id="slipInput" accept="image/*" capture="environment" class="hidden">
+        <label class="upload-btn" for="slipInput">📎 แนบสลิป</label>
+        <div id="slipPreviewWrap"></div>
+      </div>
+
+      <div class="form-group">
+        <label>รูปสินค้า / บิล (ถ้ามี)</label>
+        <input type="file" id="photoInput" accept="image/*" capture="environment" class="hidden">
+        <label class="upload-btn" for="photoInput">📷 แนบรูปภาพ</label>
+        <div id="photoPreviewWrap"></div>
+      </div>
+
+      <div class="form-group">
+        <label>บันทึกเพิ่มเติม (ถ้ามี)</label>
+        <input id="noteInput" type="text" placeholder="เช่น ก๋วยเตี๋ยวมื้อเที่ยง">
+      </div>
+
+      <div class="form-group">
+        <label>วันที่</label>
+        <input id="dateInput" type="date">
+      </div>
+
+      <button id="saveBtn">บันทึกรายการ</button>
+      <button id="cancelBtn">ยกเลิก</button>
+    </div>
+  </div>
+
+  <!-- SHARE SHEET -->
+  <div id="shareOverlay" class="overlay">
+    <div class="sheet">
+      <div class="sheet-title">แชร์ให้พ่อแม่ดู</div>
+      <p class="share-note">ให้พ่อแม่เปิดหน้านี้ แล้วแตะแท็บ “พ่อแม่ (ดูอย่างเดียว)” ในหน้าเข้าสู่ระบบ จากนั้นกรอกไอดีนี้ พ่อแม่จะเห็นรายการทั้งหมดและยอดรวม แต่แก้ไขหรือลบไม่ได้</p>
+      <div class="share-phone num" id="sharePhoneDisplay"></div>
+      <button id="copyIdBtn" class="upload-btn" style="width:100%;justify-content:center;">คัดลอกไอดี</button>
+      <button id="closeShareBtn" style="margin-top:14px;width:100%;padding:12px 0;border:none;background:none;color:var(--ink-soft);font-size:13.5px;cursor:pointer;">ปิด</button>
+    </div>
+  </div>
+
+  <!-- LIGHTBOX -->
+  <div id="lightboxOverlay" class="overlay">
+    <div class="lightbox-body" id="lightboxBody"></div>
+  </div>
+
+  <div id="toast"><span id="toastMsg"></span><button id="toastUndo">เลิกทำ</button></div>
+
+</div>
+
+<script>
+const EXPENSE_CATS = [
+  {id:'food', label:'อาหาร', icon:'🍜'},
+  {id:'transport', label:'เดินทาง', icon:'🚌'},
+  {id:'room', label:'ค่าห้อง', icon:'🏠'},
+  {id:'bills', label:'บิล/ค่าใช้จ่ายประจำ', icon:'🧾'},
+  {id:'shopping', label:'ช้อปปิ้ง', icon:'🛍️'},
+  {id:'entertain', label:'บันเทิง', icon:'🎬'},
+  {id:'health', label:'สุขภาพ', icon:'💊'},
+  {id:'other_e', label:'อื่นๆ', icon:'📦'},
+];
+const INCOME_CATS = [
+  {id:'salary', label:'เงินเดือน', icon:'💰'},
+  {id:'bonus', label:'โบนัส', icon:'🎯'},
+  {id:'gift', label:'ของขวัญ', icon:'🎁'},
+  {id:'other_i', label:'อื่นๆ', icon:'✨'},
+];
+const ALL_CATS = {};
+[...EXPENSE_CATS, ...INCOME_CATS].forEach(c => ALL_CATS[c.id] = c);
+
+let loginMode = 'owner';       // 'owner' | 'parent'
+let isParentView = false;
+let currentPhone = null;
+let transactions = [];
+let currentType = 'expense';
+let currentCat = 'food';
+let currentPay = 'cash';
+let photoDataUrl = null;
+let slipDataUrl = null;
+let pendingDelete = null;
+let toastTimer = null;
+
+const $ = id => document.getElementById(id);
+
+function fmtMoney(n){
+  const sign = n < 0 ? '-' : '';
+  return sign + '฿' + Math.abs(n).toLocaleString('th-TH', {minimumFractionDigits:0, maximumFractionDigits:2});
+}
+function fmtDateShort(dateStr){
+  const d = new Date(dateStr + 'T00:00:00');
+  const months = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+  return d.getDate() + ' ' + months[d.getMonth()];
+}
+function monthLabel(dateStr){
+  const d = new Date(dateStr + 'T00:00:00');
+  const months = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+  return months[d.getMonth()] + ' ' + (d.getFullYear() + 543);
+}
+function todayStr(){
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+function escapeHtml(s){
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+// ---------- STORAGE ----------
+// Transactions are stored as SHARED data (visible to anyone who knows the phone
+// number), so a parent can look up the same key from their own device.
+async function loadLastPhone(){
+  try{ const r = await window.storage.get('last-phone', false); return r ? r.value : ''; }
+  catch(e){ return ''; }
+}
+async function saveLastPhone(phone){
+  try{ await window.storage.set('last-phone', phone, false); }catch(e){}
+}
+async function loadTransactions(phone){
+  try{ const r = await window.storage.get('expenses:' + phone, true); return r ? JSON.parse(r.value) : []; }
+  catch(e){ return []; }
+}
+async function saveTransactions(phone, list){
+  try{ await window.storage.set('expenses:' + phone, JSON.stringify(list), true); }
+  catch(e){ console.error('save failed', e); }
+}
+
+// ---------- IMAGE HANDLING ----------
+function resizeImageFile(file, maxDim, quality){
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const img = new Image();
+      img.onload = () => {
+        let w = img.width, h = img.height;
+        if(w > h && w > maxDim){ h = Math.round(h * maxDim / w); w = maxDim; }
+        else if(h >= w && h > maxDim){ w = Math.round(w * maxDim / h); h = maxDim; }
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.onerror = reject;
+      img.src = e.target.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+function showPreview(wrapId, dataUrl, onRemove){
+  const wrap = $(wrapId);
+  wrap.innerHTML = '';
+  if(!dataUrl) return;
+  const box = document.createElement('div');
+  box.className = 'img-preview';
+  box.innerHTML = `<img src="${dataUrl}"><button type="button" class="remove-img">×</button>`;
+  box.querySelector('.remove-img').addEventListener('click', onRemove);
+  wrap.appendChild(box);
+}
+
+$('photoInput').addEventListener('change', async e => {
+  const file = e.target.files[0];
+  if(!file) return;
+  try{
+    photoDataUrl = await resizeImageFile(file, 900, 0.6);
+    showPreview('photoPreviewWrap', photoDataUrl, () => {
+      photoDataUrl = null; $('photoInput').value = ''; showPreview('photoPreviewWrap', null);
+    });
+  }catch(err){ console.error(err); }
+});
+
+$('slipInput').addEventListener('change', async e => {
+  const file = e.target.files[0];
+  if(!file) return;
+  try{
+    slipDataUrl = await resizeImageFile(file, 900, 0.6);
+    showPreview('slipPreviewWrap', slipDataUrl, () => {
+      slipDataUrl = null; $('slipInput').value = ''; showPreview('slipPreviewWrap', null);
+    });
+  }catch(err){ console.error(err); }
+});
+
+// ---------- LOGIN MODE ----------
+function updateLoginModeUI(){
+  $('modeOwnerBtn').classList.toggle('active', loginMode === 'owner');
+  $('modeParentBtn').classList.toggle('active', loginMode === 'parent');
+  if(loginMode === 'owner'){
+    $('coverTitle').textContent = 'สมุดรายจ่าย';
+    $('coverSub').textContent = 'บันทึกรายรับรายจ่ายของคุณ เข้าสู่ระบบด้วยเลขไอดีเพื่อเปิดสมุดของคุณ';
+    $('phoneFieldLabel').textContent = 'เลขไอดี';
+    $('openBtn').textContent = 'เปิดสมุด';
+    $('coverFoot').textContent = 'ใช้เลขไอดีเป็นรหัสประจำสมุดของคุณ — ไอดีนี้จะเป็นไอดีที่พ่อแม่ใช้เข้าดูรายจ่ายได้ ข้อมูลรายการจะถูกเก็บแบบเปิดดูได้ตามไอดีนี้ ตั้งไอดีที่คนอื่นเดาไม่ได้ง่ายๆ';
+  }else{
+    $('coverTitle').textContent = 'ดูรายจ่ายลูก';
+    $('coverSub').textContent = 'กรอกเลขไอดีของลูกเพื่อดูรายการใช้จ่ายแบบดูอย่างเดียว';
+    $('phoneFieldLabel').textContent = 'เลขไอดีของลูก';
+    $('openBtn').textContent = 'ดูสมุด';
+    $('coverFoot').textContent = 'โหมดนี้ดูรายการและยอดรวมได้เท่านั้น เพิ่มหรือลบรายการไม่ได้';
+  }
+}
+$('modeOwnerBtn').addEventListener('click', () => { loginMode = 'owner'; updateLoginModeUI(); });
+$('modeParentBtn').addEventListener('click', () => { loginMode = 'parent'; updateLoginModeUI(); });
+
+// ---------- INIT ----------
+async function init(){
+  const last = await loadLastPhone();
+  if(last) $('phoneInput').value = last;
+  updateLoginModeUI();
+  $('loadingScreen').style.display = 'none';
+  $('loginScreen').style.display = 'flex';
+  $('phoneInput').focus();
+}
+
+function validateId(v){
+  const id = v.trim().replace(/\s+/g,'');
+  return (id.length >= 3 && id.length <= 24) ? id : null;
+}
+
+async function handleLogin(){
+  const raw = $('phoneInput').value;
+  const digits = validateId(raw);
+  if(!digits){
+    $('loginError').textContent = 'กรอกเลขไอดีอย่างน้อย 3 ตัวอักษร';
+    return;
+  }
+  $('loginError').textContent = '';
+  currentPhone = digits;
+  isParentView = (loginMode === 'parent');
+  if(!isParentView) await saveLastPhone(digits);
+
+  $('loadingScreen').style.display = 'flex';
+  $('loadingScreen').textContent = 'กำลังเปิดสมุด…';
+  transactions = await loadTransactions(digits);
+  $('loadingScreen').style.display = 'none';
+
+  $('loginScreen').style.display = 'none';
+  $('mainScreen').style.display = 'flex';
+  $('dateInput').value = todayStr();
+  updateTopbar();
+  render();
+}
+
+function handleLogout(){
+  currentPhone = null;
+  transactions = [];
+  isParentView = false;
+  loginMode = 'owner';
+  updateLoginModeUI();
+  $('mainScreen').style.display = 'none';
+  $('loginScreen').style.display = 'flex';
+}
+
+function updateTopbar(){
+  if(isParentView){
+    $('topbarTitle').textContent = 'สมุดของไอดี ' + currentPhone;
+    $('phoneDisplay').textContent = 'โหมดพ่อแม่ • ดูอย่างเดียว';
+    $('logoutBtn').textContent = 'เปลี่ยนเบอร์';
+    $('shareBtn').classList.add('hidden');
+    $('fab').classList.add('hidden');
+  }else{
+    $('topbarTitle').textContent = 'สมุดรายจ่าย';
+    $('phoneDisplay').textContent = currentPhone;
+    $('logoutBtn').textContent = 'ออกจากระบบ';
+    $('shareBtn').classList.remove('hidden');
+    $('fab').classList.remove('hidden');
+  }
+}
+
+// ---------- RENDER ----------
+function render(){
+  const income = transactions.filter(t => t.type==='income').reduce((s,t)=>s+t.amount,0);
+  const expense = transactions.filter(t => t.type==='expense').reduce((s,t)=>s+t.amount,0);
+
+  if(isParentView){
+    $('balanceLabel').textContent = 'ยอดใช้จ่ายทั้งหมด';
+    $('balanceFigure').textContent = fmtMoney(expense);
+  }else{
+    $('balanceLabel').textContent = 'ยอดคงเหลือทั้งหมด';
+    $('balanceFigure').textContent = fmtMoney(income - expense);
+  }
+  $('totalIncome').textContent = fmtMoney(income);
+  $('totalExpense').textContent = fmtMoney(expense);
+
+  const ledger = $('ledger');
+  ledger.innerHTML = '';
+
+  if(transactions.length === 0){
+    const msg = isParentView ? 'ยังไม่มีการบันทึกรายจ่าย' : 'บันทึกรายจ่ายหรือรายรับแรกของคุณ';
+    ledger.innerHTML = `<div class="empty-state"><div class="mark">฿</div><p>ยังไม่มีรายการ<br>${msg}</p></div>`;
+    return;
+  }
+
+  const sorted = [...transactions].sort((a,b) => (b.date + b.createdAt).localeCompare(a.date + a.createdAt));
+  let lastMonthKey = null;
+  sorted.forEach(t => {
+    const monthKey = t.date.slice(0,7);
+    if(monthKey !== lastMonthKey){
+      lastMonthKey = monthKey;
+      const h = document.createElement('div');
+      h.className = 'ledger-month';
+      h.textContent = monthLabel(t.date);
+      ledger.appendChild(h);
+    }
+    ledger.appendChild(buildRow(t));
+  });
+}
+
+function buildRow(t){
+  const cat = ALL_CATS[t.catId] || {label:'อื่นๆ', icon:'📦'};
+  const hasImages = !!(t.photoDataUrl || t.slipDataUrl);
+  const payLabel = t.payMethod === 'scan' ? '📲 สแกนจ่าย' : '💵 เงินสด';
+  const row = document.createElement('div');
+  row.className = 'row';
+  row.innerHTML = `
+    <div class="row-icon ${t.photoDataUrl ? 'photo' : ''}">${t.photoDataUrl ? `<img src="${t.photoDataUrl}">` : cat.icon}</div>
+    <div class="row-mid">
+      <div class="row-cat">${cat.label}</div>
+      ${t.note ? `<div class="row-note">${escapeHtml(t.note)}</div>` : ''}
+      <div class="row-pay">${payLabel}${hasImages ? ' · มีรูปแนบ' : ''}</div>
+    </div>
+    <div class="row-right">
+      <div class="row-amt ${t.type}">${t.type==='expense' ? '−' : '+'}${fmtMoney(t.amount)}</div>
+      <div class="row-date">${fmtDateShort(t.date)}</div>
+    </div>
+    ${isParentView ? '' : `<button class="row-del" data-id="${t.id}" aria-label="ลบ">×</button>`}
+  `;
+  if(hasImages){
+    row.querySelector('.row-icon, .row-mid, .row-right').style.cursor = 'default';
+    row.addEventListener('click', (e) => {
+      if(e.target.classList.contains('row-del')) return;
+      openLightbox(t);
+    });
+  }
+  if(!isParentView){
+    row.querySelector('.row-del').addEventListener('click', (e) => {
+      e.stopPropagation();
+      deleteTransaction(t.id);
+    });
+  }
+  return row;
+}
+
+// ---------- LIGHTBOX ----------
+function openLightbox(t){
+  const body = $('lightboxBody');
+  body.innerHTML = '';
+  if(t.photoDataUrl){
+    const fig = document.createElement('figure');
+    fig.innerHTML = `<img src="${t.photoDataUrl}"><figcaption>รูปสินค้า / บิล</figcaption>`;
+    body.appendChild(fig);
+  }
+  if(t.slipDataUrl){
+    const fig = document.createElement('figure');
+    fig.innerHTML = `<img src="${t.slipDataUrl}"><figcaption>สลิปโอนเงิน</figcaption>`;
+    body.appendChild(fig);
+  }
+  const closeBtn = document.createElement('button');
+  closeBtn.id = 'lightboxClose';
+  closeBtn.textContent = 'ปิด';
+  closeBtn.addEventListener('click', () => $('lightboxOverlay').classList.remove('show'));
+  body.appendChild(closeBtn);
+  $('lightboxOverlay').classList.add('show');
+}
+$('lightboxOverlay').addEventListener('click', e => { if(e.target.id === 'lightboxOverlay') $('lightboxOverlay').classList.remove('show'); });
+
+// ---------- CRUD ----------
+async function addTransaction(){
+  const amount = parseFloat($('amountInput').value);
+  if(!amount || amount <= 0){ $('amountInput').focus(); return; }
+  const t = {
+    id: 't' + Date.now() + Math.random().toString(36).slice(2,7),
+    type: currentType,
+    amount: amount,
+    catId: currentCat,
+    payMethod: currentPay,
+    photoDataUrl: photoDataUrl,
+    slipDataUrl: currentPay === 'scan' ? slipDataUrl : null,
+    note: $('noteInput').value.trim(),
+    date: $('dateInput').value || todayStr(),
+    createdAt: new Date().toISOString(),
+  };
+  transactions.push(t);
+  await saveTransactions(currentPhone, transactions);
+  closeSheet();
+  render();
+}
+
+async function deleteTransaction(id){
+  const idx = transactions.findIndex(t => t.id === id);
+  if(idx === -1) return;
+  pendingDelete = transactions[idx];
+  transactions.splice(idx,1);
+  await saveTransactions(currentPhone, transactions);
+  render();
+  showToast('ลบรายการแล้ว');
+}
+async function undoDelete(){
+  if(!pendingDelete) return;
+  transactions.push(pendingDelete);
+  pendingDelete = null;
+  await saveTransactions(currentPhone, transactions);
+  render();
+  hideToast();
+}
+function showToast(msg){
+  $('toastMsg').textContent = msg;
+  $('toast').classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(hideToast, 4500);
+}
+function hideToast(){ $('toast').classList.remove('show'); }
+
+// ---------- ADD SHEET ----------
+function openSheet(){
+  currentType = 'expense';
+  currentCat = EXPENSE_CATS[0].id;
+  currentPay = 'cash';
+  photoDataUrl = null;
+  slipDataUrl = null;
+  $('amountInput').value = '';
+  $('noteInput').value = '';
+  $('dateInput').value = todayStr();
+  $('photoInput').value = '';
+  $('slipInput').value = '';
+  showPreview('photoPreviewWrap', null);
+  showPreview('slipPreviewWrap', null);
+  updateTypeUI();
+  updatePayUI();
+  $('addOverlay').classList.add('show');
+  setTimeout(() => $('amountInput').focus(), 50);
+}
+function closeSheet(){ $('addOverlay').classList.remove('show'); }
+
+function updateTypeUI(){
+  $('typeExpenseBtn').classList.toggle('active', currentType === 'expense');
+  $('typeIncomeBtn').classList.toggle('active', currentType === 'income');
+  renderCatGrid();
+}
+function renderCatGrid(){
+  const cats = currentType === 'expense' ? EXPENSE_CATS : INCOME_CATS;
+  if(!cats.find(c => c.id === currentCat)) currentCat = cats[0].id;
+  const grid = $('catGrid');
+  grid.innerHTML = '';
+  cats.forEach(c => {
+    const chip = document.createElement('button');
+    chip.type = 'button';
+    chip.className = 'cat-chip' + (c.id === currentCat ? ' active' : '');
+    chip.textContent = c.icon + ' ' + c.label;
+    chip.addEventListener('click', () => { currentCat = c.id; renderCatGrid(); });
+    grid.appendChild(chip);
+  });
+}
+function updatePayUI(){
+  $('payCashBtn').classList.toggle('active', currentPay === 'cash');
+  $('payScanBtn').classList.toggle('active', currentPay === 'scan');
+  $('slipField').classList.toggle('hidden', currentPay !== 'scan');
+}
+
+// ---------- SHARE SHEET ----------
+function openShareSheet(){
+  $('sharePhoneDisplay').textContent = currentPhone;
+  $('shareOverlay').classList.add('show');
+}
+
+// ---------- EVENTS ----------
+$('openBtn').addEventListener('click', handleLogin);
+$('phoneInput').addEventListener('keydown', e => { if(e.key === 'Enter') handleLogin(); });
+$('logoutBtn').addEventListener('click', handleLogout);
+$('fab').addEventListener('click', openSheet);
+$('cancelBtn').addEventListener('click', closeSheet);
+$('addOverlay').addEventListener('click', e => { if(e.target.id === 'addOverlay') closeSheet(); });
+$('saveBtn').addEventListener('click', addTransaction);
+$('typeExpenseBtn').addEventListener('click', () => { currentType = 'expense'; updateTypeUI(); });
+$('typeIncomeBtn').addEventListener('click', () => { currentType = 'income'; updateTypeUI(); });
+$('payCashBtn').addEventListener('click', () => { currentPay = 'cash'; updatePayUI(); });
+$('payScanBtn').addEventListener('click', () => { currentPay = 'scan'; updatePayUI(); });
+$('toastUndo').addEventListener('click', undoDelete);
+$('shareBtn').addEventListener('click', openShareSheet);
+$('closeShareBtn').addEventListener('click', () => $('shareOverlay').classList.remove('show'));
+$('shareOverlay').addEventListener('click', e => { if(e.target.id === 'shareOverlay') $('shareOverlay').classList.remove('show'); });
+$('copyIdBtn').addEventListener('click', async () => {
+  try{ await navigator.clipboard.writeText(currentPhone); showToast('คัดลอกไอดีแล้ว'); }
+  catch(e){ showToast('คัดลอกไม่สำเร็จ ลองแตะค้างที่ไอดี'); }
+});
+
+init();
+</script>
+</body>
+</html>
